@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Link Downloader & Transcriber</title>
+    <!-- Modern Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a; /* Slate 900 */
+            --card-bg: #1e293b; /* Slate 800 */
+            --text-main: #f8fafc; /* Slate 50 */
+            --text-muted: #94a3b8; /* Slate 400 */
+            --primary: #3b82f6; /* Blue 500 */
+            --primary-hover: #2563eb; /* Blue 600 */
+            --secondary: #10b981; /* Emerald 500 */
+            --secondary-hover: #059669; /* Emerald 600 */
+            --border: #334155; /* Slate 700 */
+            --error: #ef4444; /* Red 500 */
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 500px;
+            border: 1px solid var(--border);
+            transition: transform 0.2s ease;
+        }
+
+        .container:hover {
+            transform: translateY(-2px);
+        }
+
+        h1 {
+            margin-top: 0;
+            font-size: 1.75rem;
+            font-weight: 700;
+            text-align: center;
+            background: linear-gradient(135deg, #60a5fa, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        p.subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        input[type="url"] {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background-color: #0f172a;
+            color: var(--text-main);
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        input[type="url"]:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        button {
+            flex: 1;
+            padding: 0.875rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        button.btn-download {
+            background-color: var(--primary);
+        }
+
+        button.btn-download:hover:not(:disabled) {
+            background-color: var(--primary-hover);
+        }
+
+        button.btn-transcribe {
+            background-color: var(--secondary);
+        }
+
+        button.btn-transcribe:hover:not(:disabled) {
+            background-color: var(--secondary-hover);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        #status-area {
+            display: none;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            background-color: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #bfdbfe;
+        }
+
+        #status-area.error {
+            background-color: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+
+        #status-area.success {
+            background-color: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.3);
+            color: #a7f3d0;
+        }
+
+        #transcript-result {
+            display: none;
+            width: 100%;
+            height: 150px;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background-color: #0f172a;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            resize: vertical;
+            box-sizing: border-box;
+            outline: none;
+            margin-top: 1rem;
+            font-family: inherit;
+        }
+
+        /* Spinner Animation */
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid white;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Media Extraction</h1>
+        <p class="subtitle">Download videos or generate transcripts instantly</p>
+        
+        <input type="hidden" id="user_id" value="guest_123">
+
+        <div class="input-group">
+            <label for="url">Target URL</label>
+            <input type="url" id="url" placeholder="https://www.youtube.com/watch?v=..." required>
+        </div>
+
+        <div id="status-area"></div>
+
+        <div class="button-group">
+            <button id="btn-dl" class="btn-download" onclick="handleAction('download')">
+                <span class="spinner" id="spin-dl"></span>
+                <span id="text-dl">Download</span>
+            </button>
+            <button id="btn-tr" class="btn-transcribe" onclick="handleAction('transcribe')">
+                <span class="spinner" id="spin-tr"></span>
+                <span id="text-tr">Transcribe</span>
+            </button>
+        </div>
+
+        <textarea id="transcript-result" readonly placeholder="Transcript will appear here..."></textarea>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+
+        function setStatus(message, type = 'info') {
+            const statusArea = document.getElementById('status-area');
+            statusArea.style.display = 'block';
+            statusArea.textContent = message;
+            statusArea.className = ''; // reset
+            if (type !== 'info') {
+                statusArea.classList.add(type);
+            }
+        }
+
+        function toggleLoading(actionType, isLoading) {
+            const isDl = actionType === 'download';
+            const btn = document.getElementById(isDl ? 'btn-dl' : 'btn-tr');
+            const otherBtn = document.getElementById(isDl ? 'btn-tr' : 'btn-dl');
+            const spinner = document.getElementById(isDl ? 'spin-dl' : 'spin-tr');
+            const text = document.getElementById(isDl ? 'text-dl' : 'text-tr');
+
+            btn.disabled = isLoading;
+            otherBtn.disabled = isLoading;
+            document.getElementById('url').disabled = isLoading;
+
+            if (isLoading) {
+                spinner.style.display = 'inline-block';
+                text.textContent = isDl ? 'Downloading...' : 'Transcribing...';
+            } else {
+                spinner.style.display = 'none';
+                text.textContent = isDl ? 'Download' : 'Transcribe';
+            }
+        }
+
+        async function handleAction(actionType) {
+            const urlInput = document.getElementById('url').value.trim();
+            const userId = document.getElementById('user_id').value;
+            const transcriptArea = document.getElementById('transcript-result');
+            
+            if (!urlInput) {
+                setStatus("Please enter a valid URL.", "error");
+                return;
+            }
+
+            // Reset UI
+            setStatus(`Starting ${actionType}...`);
+            transcriptArea.style.display = 'none';
+            toggleLoading(actionType, true);
+
+            try {
+                const response = await fetch(`${API_BASE}/${actionType}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ url: urlInput, user_id: userId })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || data.status === 'error') {
+                    throw new Error(data.message || `An error occurred during ${actionType}`);
+                }
+
+                if (actionType === 'download') {
+                    setStatus(data.message || 'Download complete!', 'success');
+                } else if (actionType === 'transcribe') {
+                    setStatus('Transcription successful!', 'success');
+                    transcriptArea.style.display = 'block';
+                    transcriptArea.value = data.text;
+                }
+
+            } catch (error) {
+                setStatus(`Error: ${error.message}`, 'error');
+                // Could highlight this error visually to the user.
+            } finally {
+                toggleLoading(actionType, false);
+            }
+        }
+    </script>
+</body>
+</html>
