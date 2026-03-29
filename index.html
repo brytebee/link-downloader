@@ -101,6 +101,39 @@
             gap: 1rem;
             margin-bottom: 1.5rem;
         }
+        
+        .browse-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .browse-group input {
+            flex: 1;
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background-color: #0f172a;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        .btn-browse {
+            padding: 0 1rem;
+            background-color: var(--border);
+            border: 1px solid var(--border);
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-browse:hover {
+            background-color: #475569;
+        }
 
         button {
             flex: 1;
@@ -132,6 +165,17 @@
 
         button.btn-transcribe:hover:not(:disabled) {
             background-color: var(--secondary-hover);
+        }
+        
+        button.btn-open {
+            background-color: #f59e0b; /* Amber */
+            margin-top: 1rem;
+            width: 100%;
+            display: none;
+        }
+        
+        button.btn-open:hover {
+            background-color: #d97706;
         }
 
         button:disabled {
@@ -207,6 +251,12 @@
         <div class="input-group">
             <label for="url">Target URL</label>
             <input type="url" id="url" placeholder="https://www.youtube.com/watch?v=..." required>
+            
+            <label for="save-path" style="margin-top: 1rem;">Save Location (Optional)</label>
+            <div class="browse-group">
+                <input type="text" id="save-path" placeholder="Default downloads folder...">
+                <button type="button" class="btn-browse" onclick="browseFolder()">Browse...</button>
+            </div>
         </div>
 
         <div id="status-area"></div>
@@ -221,12 +271,17 @@
                 <span id="text-tr">Transcribe</span>
             </button>
         </div>
+        
+        <button id="btn-open-folder" class="btn-open" onclick="openOutputFolder()">
+            Open Output Folder
+        </button>
 
         <textarea id="transcript-result" readonly placeholder="Transcript will appear here..."></textarea>
     </div>
 
     <script>
         const API_BASE = 'http://localhost:5000/api';
+        let currentDownloadPath = '';
 
         function setStatus(message, type = 'info') {
             const statusArea = document.getElementById('status-area');
@@ -258,10 +313,37 @@
             }
         }
 
+        async function browseFolder() {
+            try {
+                const response = await fetch(`${API_BASE}/browse-folder`);
+                const data = await response.json();
+                if (response.ok && data.status === 'success') {
+                    document.getElementById('save-path').value = data.path;
+                }
+            } catch (error) {
+                console.error("Browse failed", error);
+            }
+        }
+
+        async function openOutputFolder() {
+            if (!currentDownloadPath) return;
+            try {
+                await fetch(`${API_BASE}/open-location`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path: currentDownloadPath })
+                });
+            } catch (error) {
+                console.error("Failed to open folder", error);
+            }
+        }
+
         async function handleAction(actionType) {
             const urlInput = document.getElementById('url').value.trim();
             const userId = document.getElementById('user_id').value;
+            const savePath = document.getElementById('save-path').value.trim();
             const transcriptArea = document.getElementById('transcript-result');
+            const btnOpen = document.getElementById('btn-open-folder');
             
             if (!urlInput) {
                 setStatus("Please enter a valid URL.", "error");
@@ -271,6 +353,7 @@
             // Reset UI
             setStatus(`Starting ${actionType}...`);
             transcriptArea.style.display = 'none';
+            btnOpen.style.display = 'none';
             toggleLoading(actionType, true);
 
             try {
@@ -279,7 +362,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ url: urlInput, user_id: userId })
+                    body: JSON.stringify({ url: urlInput, user_id: userId, save_path: savePath })
                 });
 
                 const data = await response.json();
@@ -290,6 +373,10 @@
 
                 if (actionType === 'download') {
                     setStatus(data.message || 'Download complete!', 'success');
+                    if (data.folder_path) {
+                        currentDownloadPath = data.folder_path;
+                        btnOpen.style.display = 'block';
+                    }
                 } else if (actionType === 'transcribe') {
                     setStatus('Transcription successful!', 'success');
                     transcriptArea.style.display = 'block';
@@ -298,7 +385,6 @@
 
             } catch (error) {
                 setStatus(`Error: ${error.message}`, 'error');
-                // Could highlight this error visually to the user.
             } finally {
                 toggleLoading(actionType, false);
             }
