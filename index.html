@@ -135,6 +135,64 @@
             background-color: #475569;
         }
 
+        /* Clear Button */
+        .clear-btn {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 0;
+            display: none;
+            line-height: 1;
+        }
+        .clear-btn:hover {
+            color: var(--text-main);
+        }
+
+        /* Resolution Select */
+        #resolution-group {
+            display: none;
+            margin-top: 1rem;
+        }
+        select {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background-color: #0f172a;
+            color: var(--text-main);
+            font-size: 0.95rem;
+            outline: none;
+            cursor: pointer;
+        }
+
+        /* Progress Bar */
+        #progress-container {
+            display: none;
+            margin-bottom: 1.5rem;
+        }
+        progress {
+            width: 100%;
+            height: 12px;
+            border-radius: 6px;
+            overflow: hidden;
+            appearance: none;
+        }
+        progress::-webkit-progress-bar { background-color: #0f172a; }
+        progress::-webkit-progress-value { background-color: var(--primary); transition: width 0.3s ease; }
+        .progress-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
         button {
             flex: 1;
             padding: 0.875rem;
@@ -250,7 +308,16 @@
 
         <div class="input-group">
             <label for="url">Target URL</label>
-            <input type="url" id="url" placeholder="https://www.youtube.com/watch?v=..." required>
+            <div style="position: relative;">
+                <input type="url" id="url" placeholder="https://www.youtube.com/watch?v=..." required oninput="handleUrlInput()">
+                <button type="button" class="clear-btn" id="clear-url" onclick="clearUrl()">×</button>
+            </div>
+            <div id="url-spinner" style="font-size: 0.8rem; color: var(--primary); display: none; margin-top: 0.5rem;">Analyzing available formats...</div>
+            
+            <div id="resolution-group">
+                <label for="resolution" style="margin-top: 1rem;">Video Quality</label>
+                <select id="resolution"></select>
+            </div>
             
             <label for="save-path" style="margin-top: 1rem;">Save Location (Optional)</label>
             <div class="browse-group">
@@ -260,6 +327,15 @@
         </div>
 
         <div id="status-area"></div>
+        
+        <div id="progress-container">
+            <progress id="dl-progress" value="0" max="100"></progress>
+            <div class="progress-stats">
+                <span id="dl-percent">0%</span>
+                <span id="dl-speed">--</span>
+                <span id="dl-eta">--</span>
+            </div>
+        </div>
 
         <div class="button-group">
             <button id="btn-dl" class="btn-download" onclick="handleAction('download')">
@@ -282,31 +358,82 @@
     <script>
         const API_BASE = 'http://localhost:5000/api';
         let currentDownloadPath = '';
+        let urlDebounceTimer;
+        let progressInterval;
+
+        function clearUrl() {
+            const urlInput = document.getElementById('url');
+            urlInput.value = '';
+            handleUrlInput();
+            urlInput.focus();
+        }
+
+        function handleUrlInput() {
+            const url = document.getElementById('url').value;
+            const clearBtn = document.getElementById('clear-url');
+            clearBtn.style.display = url ? 'block' : 'none';
+            
+            document.getElementById('resolution-group').style.display = 'none';
+
+            clearTimeout(urlDebounceTimer);
+            if (!url.trim() || !url.startsWith('http')) return;
+
+            document.getElementById('url-spinner').style.display = 'block';
+            urlDebounceTimer = setTimeout(() => fetchFormats(url), 600);
+        }
+
+        async function fetchFormats(url) {
+            try {
+                const res = await fetch(`${API_BASE}/info`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+                const data = await res.json();
+                document.getElementById('url-spinner').style.display = 'none';
+                
+                if (res.ok && data.status === 'success' && data.formats.length > 0) {
+                    const select = document.getElementById('resolution');
+                    select.innerHTML = '';
+                    data.formats.forEach(f => {
+                        const opt = document.createElement('option');
+                        opt.value = f.id;
+                        opt.textContent = f.label;
+                        select.appendChild(opt);
+                    });
+                    document.getElementById('resolution-group').style.display = 'block';
+                    setStatus('', 'info'); // clear status
+                    document.getElementById('status-area').style.display = 'none';
+                } else {
+                    throw new Error(data.message || "Failed to analyze video formats.");
+                }
+            } catch (err) {
+                document.getElementById('url-spinner').style.display = 'none';
+                console.error('Format fetch error:', err);
+                setStatus(`Format Analysis Error: ${err.message}`, 'error');
+            }
+        }
 
         function setStatus(message, type = 'info') {
             const statusArea = document.getElementById('status-area');
             statusArea.style.display = 'block';
-            statusArea.textContent = message;
-            statusArea.className = ''; // reset
-            if (type !== 'info') {
-                statusArea.classList.add(type);
-            }
+            statusArea.innerHTML = message;
+            statusArea.className = ''; 
+            if (type !== 'info') statusArea.classList.add(type);
         }
 
         function toggleLoading(actionType, isLoading) {
             const isDl = actionType === 'download';
-            const btn = document.getElementById(isDl ? 'btn-dl' : 'btn-tr');
-            const otherBtn = document.getElementById(isDl ? 'btn-tr' : 'btn-dl');
+            document.getElementById('btn-dl').disabled = isLoading;
+            document.getElementById('btn-tr').disabled = isLoading;
+            document.getElementById('url').disabled = isLoading;
+            
             const spinner = document.getElementById(isDl ? 'spin-dl' : 'spin-tr');
             const text = document.getElementById(isDl ? 'text-dl' : 'text-tr');
-
-            btn.disabled = isLoading;
-            otherBtn.disabled = isLoading;
-            document.getElementById('url').disabled = isLoading;
-
+            
             if (isLoading) {
                 spinner.style.display = 'inline-block';
-                text.textContent = isDl ? 'Downloading...' : 'Transcribing...';
+                text.textContent = isDl ? 'Initializing...' : 'Transcribing...';
             } else {
                 spinner.style.display = 'none';
                 text.textContent = isDl ? 'Download' : 'Transcribe';
@@ -337,11 +464,57 @@
                 console.error("Failed to open folder", error);
             }
         }
+        
+        function pollProgress(jobId) {
+            document.getElementById('progress-container').style.display = 'block';
+            
+            progressInterval = setInterval(async () => {
+                try {
+                    const res = await fetch(`${API_BASE}/progress/${jobId}`);
+                    const json = await res.json();
+                    
+                    if (!res.ok || json.status === 'error') throw new Error("Progress fetch failed");
+                    
+                    const state = json.data;
+                    document.getElementById('text-dl').textContent = state.status === 'downloading' ? 'Downloading...' : 'Processing...';
+                    
+                    const percentFloat = parseFloat(state.percent.replace('%', ''));
+                    if (!isNaN(percentFloat)) {
+                        document.getElementById('dl-progress').value = percentFloat;
+                        document.getElementById('dl-percent').textContent = state.percent;
+                    }
+                    
+                    document.getElementById('dl-speed').textContent = state.speed || '--';
+                    document.getElementById('dl-eta').textContent = state.eta || '--';
+                    
+                    if (state.status === 'finished') {
+                        clearInterval(progressInterval);
+                        document.getElementById('progress-container').style.display = 'none';
+                        toggleLoading('download', false);
+                        setStatus(`Downloaded '${state.title}' successfully to: <br/><strong>${state.saved_path}</strong>`, 'success');
+                        
+                        if (state.folder_path) {
+                            currentDownloadPath = state.folder_path;
+                            document.getElementById('btn-open-folder').style.display = 'block';
+                        }
+                    } else if (state.status === 'error') {
+                        throw new Error(state.error);
+                    }
+                } catch (err) {
+                    clearInterval(progressInterval);
+                    toggleLoading('download', false);
+                    setStatus(`Error: ${err.message}`, 'error');
+                }
+            }, 1000); // poll every 1 second
+        }
 
         async function handleAction(actionType) {
             const urlInput = document.getElementById('url').value.trim();
             const userId = document.getElementById('user_id').value;
             const savePath = document.getElementById('save-path').value.trim();
+            const formatSelect = document.getElementById('resolution');
+            const formatId = formatSelect && formatSelect.value ? formatSelect.value : 'bestvideo+bestaudio/best';
+            
             const transcriptArea = document.getElementById('transcript-result');
             const btnOpen = document.getElementById('btn-open-folder');
             
@@ -354,15 +527,14 @@
             setStatus(`Starting ${actionType}...`);
             transcriptArea.style.display = 'none';
             btnOpen.style.display = 'none';
+            document.getElementById('progress-container').style.display = 'none';
             toggleLoading(actionType, true);
 
             try {
                 const response = await fetch(`${API_BASE}/${actionType}`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ url: urlInput, user_id: userId, save_path: savePath })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: urlInput, user_id: userId, save_path: savePath, format_id: formatId })
                 });
 
                 const data = await response.json();
@@ -372,20 +544,18 @@
                 }
 
                 if (actionType === 'download') {
-                    setStatus(data.message || 'Download complete!', 'success');
-                    if (data.folder_path) {
-                        currentDownloadPath = data.folder_path;
-                        btnOpen.style.display = 'block';
-                    }
+                    // Download is now async. Switch to polling progress.
+                    setStatus('Connecting to media servers...', 'info');
+                    pollProgress(data.job_id);
                 } else if (actionType === 'transcribe') {
                     setStatus('Transcription successful!', 'success');
                     transcriptArea.style.display = 'block';
                     transcriptArea.value = data.text;
+                    toggleLoading(actionType, false);
                 }
 
             } catch (error) {
                 setStatus(`Error: ${error.message}`, 'error');
-            } finally {
                 toggleLoading(actionType, false);
             }
         }
