@@ -1,5 +1,7 @@
 # Link Downloader & Transcriber (UI)
 
+![App Screenshot](./Screenshot%202026-03-30%20163900.png)
+
 A clean, elegant, dark-mode user interface acting as the frontend for the Link Downloader API. Easily download videos and generate transcripts from various social media platforms directly from your localhost environment.
 
 ## Features
