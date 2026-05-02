@@ -11,19 +11,23 @@
     <style>
         :root {
             --bg-color: #0f172a; /* Slate 900 */
-            --card-bg: #1e293b; /* Slate 800 */
+            --card-bg: rgba(30, 41, 59, 0.7); /* Translucent Slate 800 */
             --text-main: #f8fafc; /* Slate 50 */
             --text-muted: #94a3b8; /* Slate 400 */
             --primary: #3b82f6; /* Blue 500 */
             --primary-hover: #2563eb; /* Blue 600 */
             --secondary: #10b981; /* Emerald 500 */
             --secondary-hover: #059669; /* Emerald 600 */
-            --border: #334155; /* Slate 700 */
+            --border: rgba(51, 65, 85, 0.5); /* Translucent Slate 700 */
             --error: #ef4444; /* Red 500 */
+            --glass-blur: 12px;
         }
 
         body {
             background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
             color: var(--text-main);
             font-family: 'Inter', sans-serif;
             margin: 0;
@@ -36,54 +40,105 @@
 
         .container {
             background-color: var(--card-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
             padding: 2.5rem;
-            border-radius: 16px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             width: 100%;
-            max-width: 500px;
+            max-width: 480px;
             border: 1px solid var(--border);
-            transition: transform 0.2s ease;
-        }
-
-        .container:hover {
-            transform: translateY(-2px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
         }
 
         h1 {
             margin-top: 0;
-            font-size: 1.75rem;
-            font-weight: 700;
+            font-size: 1.85rem;
+            font-weight: 800;
             text-align: center;
-            background: linear-gradient(135deg, #60a5fa, #3b82f6);
+            background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 0.5rem;
-        }
-
-        p.subtitle {
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 0.95rem;
             margin-bottom: 2rem;
+            letter-spacing: -0.025em;
         }
 
+        /* Mode Switcher Pill */
+        .mode-switcher {
+            display: flex;
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 14px;
+            padding: 6px;
+            margin-bottom: 2.5rem;
+            position: relative;
+            border: 1px solid var(--border);
+        }
+
+        .mode-tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            z-index: 1;
+            transition: color 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .mode-tab.active {
+            color: white;
+        }
+
+        .mode-glider {
+            position: absolute;
+            height: calc(100% - 12px);
+            width: calc(50% - 6px);
+            background: linear-gradient(135deg, var(--primary), #1d4ed8);
+            border-radius: 10px;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .mode-transcribe .mode-glider {
+            transform: translateX(100%);
+            background: linear-gradient(135deg, var(--secondary), #059669);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        /* Forms Layout */
         .input-group {
             margin-bottom: 1.5rem;
+            transition: opacity 0.3s ease, transform 0.3s ease;
         }
 
         label {
             display: block;
-            margin-bottom: 0.5rem;
-            font-size: 0.9rem;
-            font-weight: 500;
+            margin-bottom: 0.6rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
-        input[type="url"] {
+        .url-wrapper {
+            position: relative;
+            margin-bottom: 2rem;
+        }
+
+        input[type="url"], input[type="text"], select {
             width: 100%;
-            padding: 0.875rem 1rem;
-            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            border-radius: 12px;
             border: 1px solid var(--border);
-            background-color: #0f172a;
+            background: rgba(15, 23, 42, 0.4);
             color: var(--text-main);
             font-size: 1rem;
             box-sizing: border-box;
@@ -91,48 +146,46 @@
             outline: none;
         }
 
-        input[type="url"]:focus {
+        input:focus, select:focus {
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+            background: rgba(15, 23, 42, 0.6);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
         }
 
-        .button-group {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
+        .mode-transcribe input:focus, .mode-transcribe select:focus {
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
         }
-        
+
+        /* Option Groups (Conditional) */
+        .option-group {
+            display: block;
+            opacity: 1;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            max-height: 500px;
+        }
+
+        .hidden {
+            display: none !important;
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            margin: 0;
+        }
+
         .browse-group {
             display: flex;
-            gap: 0.5rem;
-            margin-top: 0.5rem;
-        }
-
-        .browse-group input {
-            flex: 1;
-            padding: 0.75rem;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            background-color: #0f172a;
-            color: var(--text-main);
-            font-size: 0.9rem;
-            box-sizing: border-box;
-            outline: none;
+            gap: 0.75rem;
         }
 
         .btn-browse {
-            padding: 0 1rem;
-            background-color: var(--border);
+            width: auto;
+            padding: 0 1.25rem;
+            background: var(--card-bg);
             border: 1px solid var(--border);
-            color: white;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.2s ease;
-        }
-        
-        .btn-browse:hover {
-            background-color: #475569;
+            color: var(--text-main);
+            border-radius: 12px;
+            font-weight: 500;
         }
 
         /* Clear Button */
@@ -141,194 +194,193 @@
             right: 12px;
             top: 50%;
             transform: translateY(-50%);
-            background: none;
+            background: rgba(255, 255, 255, 0.1);
             border: none;
             color: var(--text-muted);
-            font-size: 1.25rem;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
             cursor: pointer;
-            padding: 0;
             display: none;
-            line-height: 1;
-        }
-        .clear-btn:hover {
-            color: var(--text-main);
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
         }
 
-        /* Resolution Select */
-        #resolution-group {
-            display: none;
-            margin-top: 1rem;
-        }
-        select {
-            width: 100%;
-            padding: 0.875rem 1rem;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            background-color: #0f172a;
-            color: var(--text-main);
-            font-size: 0.95rem;
-            outline: none;
-            cursor: pointer;
-        }
-
-        /* Progress Bar */
+        /* Progress Area */
         #progress-container {
             display: none;
-            margin-bottom: 1.5rem;
+            margin: 2rem 0;
+            padding: 1.25rem;
+            background: rgba(15, 23, 42, 0.3);
+            border-radius: 16px;
+            border: 1px solid var(--border);
         }
+
         progress {
             width: 100%;
-            height: 12px;
-            border-radius: 6px;
+            height: 8px;
+            border-radius: 10px;
             overflow: hidden;
             appearance: none;
         }
-        progress::-webkit-progress-bar { background-color: #0f172a; }
-        progress::-webkit-progress-value { background-color: var(--primary); transition: width 0.3s ease; }
-        .progress-stats {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-top: 0.5rem;
+        progress::-webkit-progress-bar { background-color: rgba(255, 255, 255, 0.05); }
+        progress::-webkit-progress-value { 
+            background: linear-gradient(90deg, var(--primary), #60a5fa);
+            transition: width 0.4s ease; 
         }
 
-        button {
-            flex: 1;
-            padding: 0.875rem;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 0.5rem;
+        .mode-transcribe progress::-webkit-progress-value {
+            background: linear-gradient(90deg, var(--secondary), #34d399);
         }
 
-        button.btn-download {
-            background-color: var(--primary);
+        /* Buttons */
+        .action-btn-container {
+            margin-top: 2rem;
         }
 
-        button.btn-download:hover:not(:disabled) {
-            background-color: var(--primary-hover);
-        }
-
-        button.btn-transcribe {
-            background-color: var(--secondary);
-        }
-
-        button.btn-transcribe:hover:not(:disabled) {
-            background-color: var(--secondary-hover);
-        }
-        
-        button.btn-open {
-            background-color: #f59e0b; /* Amber */
-            margin-top: 1rem;
+        button.main-btn {
             width: 100%;
-            display: none;
-        }
-        
-        button.btn-open:hover {
-            background-color: #d97706;
+            padding: 1.1rem;
+            border: none;
+            border-radius: 14px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: white;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
         }
 
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
+        .btn-download-mode { background: linear-gradient(135deg, var(--primary), #1d4ed8); }
+        .btn-transcribe-mode { background: linear-gradient(135deg, var(--secondary), #059669); }
+
+        button.main-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
         }
+
+        button.main-btn:active { transform: translateY(0); }
+
+        .transcript-container {
+            display: none;
+            position: relative;
+            margin-top: 2rem;
+            width: 100%;
+        }
+
+        #transcript-result {
+            width: 100%;
+            height: 200px;
+            padding: 1.25rem;
+            border-radius: 16px;
+            background: rgba(15, 23, 42, 0.5);
+            color: var(--text-main);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            border: 1px solid var(--border);
+            font-family: inherit;
+            resize: vertical;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .spinner {
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 2px solid white;
+            width: 18px;
+            height: 18px;
+            animation: spin 0.8s linear infinite;
+            display: none;
+            margin-right: 10px;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
 
         #status-area {
             display: none;
             padding: 1rem;
-            border-radius: 8px;
+            border-radius: 12px;
             font-size: 0.9rem;
-            margin-bottom: 1rem;
-            background-color: rgba(59, 130, 246, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            color: #bfdbfe;
+            margin-bottom: 1.5rem;
+            text-align: center;
         }
-
-        #status-area.error {
-            background-color: rgba(239, 68, 68, 0.1);
-            border-color: rgba(239, 68, 68, 0.3);
-            color: #fca5a5;
-        }
-
-        #status-area.success {
-            background-color: rgba(16, 185, 129, 0.1);
-            border-color: rgba(16, 185, 129, 0.3);
-            color: #a7f3d0;
-        }
-
-        #transcript-result {
-            display: none;
-            width: 100%;
-            height: 150px;
-            padding: 1rem;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            background-color: #0f172a;
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            line-height: 1.5;
-            resize: vertical;
-            box-sizing: border-box;
-            outline: none;
-            margin-top: 1rem;
-            font-family: inherit;
-        }
-
-        /* Spinner Animation */
-        .spinner {
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top: 3px solid white;
-            width: 16px;
-            height: 16px;
-            animation: spin 1s linear infinite;
-            display: none;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        #status-area.info { background: rgba(59, 130, 246, 0.1); color: #93c5fd; }
+        #status-area.success { background: rgba(16, 185, 129, 0.1); color: #6ee7b7; }
+        #status-area.error { background: rgba(239, 68, 68, 0.1); color: #fca5a5; }
     </style>
 </head>
-<body>
-    <div class="container">
+<body class="mode-download">
+    <div class="container" id="main-container">
         <h1>Media Extraction</h1>
-        <p class="subtitle">Download videos or generate transcripts instantly</p>
+
+        <div class="mode-switcher">
+            <div class="mode-glider"></div>
+            <div class="mode-tab active" onclick="switchMode('download')">
+                <span>Download</span>
+            </div>
+            <div class="mode-tab" onclick="switchMode('transcribe')">
+                <span>Transcribe</span>
+            </div>
+        </div>
         
         <input type="hidden" id="user_id" value="guest_123">
 
-        <div class="input-group">
-            <label for="url">Target URL</label>
+        <div class="url-wrapper">
+            <label for="url">Target Link</label>
             <div style="position: relative;">
-                <input type="url" id="url" placeholder="https://www.youtube.com/watch?v=..." required oninput="handleUrlInput()">
+                <input type="url" id="url" placeholder="Paste link here..." required oninput="handleUrlInput()">
                 <button type="button" class="clear-btn" id="clear-url" onclick="clearUrl()">×</button>
             </div>
-            <div id="url-spinner" style="font-size: 0.8rem; color: var(--primary); display: none; margin-top: 0.5rem;">Analyzing available formats...</div>
-            
-            <div id="resolution-group">
-                <label for="resolution" style="margin-top: 1rem;">Video Quality</label>
-                <select id="resolution"></select>
-            </div>
-            
-            <label for="save-path" style="margin-top: 1rem;">Save Location (Optional)</label>
-            <div class="browse-group">
-                <input type="text" id="save-path" placeholder="Default downloads folder...">
-                <button type="button" class="btn-browse" onclick="browseFolder()">Browse...</button>
+            <div id="url-spinner" style="font-size: 0.8rem; color: var(--primary); display: none; margin-top: 0.6rem;">
+                Analyzing media availability...
             </div>
         </div>
 
         <div id="status-area"></div>
+
+        <!-- Download Specific Options -->
+        <div id="download-group" class="option-group">
+            <div class="input-group" id="resolution-group">
+                <label for="resolution">Quality & Size</label>
+                <select id="resolution"></select>
+            </div>
+            
+            <div class="input-group">
+                <label for="save-path">Destination Folder</label>
+                <div class="browse-group">
+                    <input type="text" id="save-path" placeholder="Using default folder...">
+                    <button type="button" class="btn-browse" onclick="browseFolder()">Browse</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transcribe Options (Currently auto-detects, but ready for more) -->
+        <div id="transcribe-group" class="option-group hidden">
+            <p style="font-size: 0.85rem; color: var(--text-muted); text-align: center; margin-bottom: 1.5rem;">
+                AI will automatically detect language and generate a full text transcript.
+            </p>
+        </div>
         
         <div id="progress-container">
+            <div id="progress-label" style="font-size: 0.8rem; margin-bottom: 0.6rem; font-weight: 600;">Downloading...</div>
             <progress id="dl-progress" value="0" max="100"></progress>
             <div class="progress-stats">
                 <span id="dl-percent">0%</span>
@@ -337,49 +389,85 @@
             </div>
         </div>
 
-        <div class="button-group">
-            <button id="btn-dl" class="btn-download" onclick="handleAction('download')">
-                <span class="spinner" id="spin-dl"></span>
-                <span id="text-dl">Download</span>
-            </button>
-            <button id="btn-tr" class="btn-transcribe" onclick="handleAction('transcribe')">
-                <span class="spinner" id="spin-tr"></span>
-                <span id="text-tr">Transcribe</span>
+        <div class="action-btn-container">
+            <button id="main-action-btn" class="main-btn btn-download-mode" onclick="executeCurrentMode()">
+                <span class="spinner" id="main-spinner"></span>
+                <span id="main-btn-text">Start Download</span>
             </button>
         </div>
         
-        <button id="btn-open-folder" class="btn-open" onclick="openOutputFolder()">
-            Open Output Folder
+        <button id="btn-open-folder" class="main-btn" style="background:#f59e0b; margin-top:1rem; display:none;" onclick="openOutputFolder()">
+            Open Local Folder
         </button>
 
-        <textarea id="transcript-result" readonly placeholder="Transcript will appear here..."></textarea>
+        <div class="transcript-container" id="transcript-container">
+            <button class="copy-btn" onclick="copyTranscript()" id="copy-btn">Copy</button>
+            <textarea id="transcript-result" readonly placeholder="AI Transcript will appear here..."></textarea>
+        </div>
     </div>
 
     <script>
         const API_BASE = 'http://localhost:5000/api';
+        let currentMode = 'download';
         let currentDownloadPath = '';
         let urlDebounceTimer;
         let progressInterval;
 
-        function clearUrl() {
-            const urlInput = document.getElementById('url');
-            urlInput.value = '';
-            handleUrlInput();
-            urlInput.focus();
+        function switchMode(mode) {
+            if (progressInterval) {
+                if (!confirm("A job is currently running. Switching modes may hide its progress. Continue?")) return;
+            }
+            
+            currentMode = mode;
+            const container = document.body;
+            const glider = document.querySelector('.mode-glider');
+            const tabs = document.querySelectorAll('.mode-tab');
+            const btn = document.getElementById('main-action-btn');
+            const btnText = document.getElementById('main-btn-text');
+            
+            // UI Toggle
+            if (mode === 'download') {
+                container.className = 'mode-download';
+                tabs[0].classList.add('active');
+                tabs[1].classList.remove('active');
+                document.getElementById('download-group').classList.remove('hidden');
+                document.getElementById('transcribe-group').classList.add('hidden');
+                btn.className = 'main-btn btn-download-mode';
+                btnText.textContent = 'Start Download';
+            } else {
+                container.className = 'mode-transcribe';
+                tabs[1].classList.add('active');
+                tabs[0].classList.remove('active');
+                document.getElementById('download-group').classList.add('hidden');
+                document.getElementById('transcribe-group').classList.remove('hidden');
+                btn.className = 'main-btn btn-transcribe-mode';
+                btnText.textContent = 'Begin Transcription';
+            }
+
+            // Hide resolution if not in download mode
+            if (mode !== 'download') {
+                document.getElementById('resolution-group').style.display = 'none';
+            } else {
+                handleUrlInput(); // Re-trigger analysis if URL exists
+            }
         }
 
         function handleUrlInput() {
             const url = document.getElementById('url').value;
             const clearBtn = document.getElementById('clear-url');
-            clearBtn.style.display = url ? 'block' : 'none';
+            clearBtn.style.display = url ? 'flex' : 'none';
             
-            document.getElementById('resolution-group').style.display = 'none';
+            // Only fetch formats in download mode
+            if (currentMode !== 'download') {
+                document.getElementById('resolution-group').style.display = 'none';
+                return;
+            }
 
             clearTimeout(urlDebounceTimer);
             if (!url.trim() || !url.startsWith('http')) return;
 
             document.getElementById('url-spinner').style.display = 'block';
-            urlDebounceTimer = setTimeout(() => fetchFormats(url), 600);
+            urlDebounceTimer = setTimeout(() => fetchFormats(url), 800);
         }
 
         async function fetchFormats(url) {
@@ -402,161 +490,170 @@
                         select.appendChild(opt);
                     });
                     document.getElementById('resolution-group').style.display = 'block';
-                    setStatus('', 'info'); // clear status
-                    document.getElementById('status-area').style.display = 'none';
+                    setStatus('', 'info');
                 } else {
-                    throw new Error(data.message || "Failed to analyze video formats.");
+                    throw new Error(data.message || "Could not parse formats.");
                 }
             } catch (err) {
                 document.getElementById('url-spinner').style.display = 'none';
-                console.error('Format fetch error:', err);
-                setStatus(`Format Analysis Error: ${err.message}`, 'error');
+                setStatus(`Link Analysis Error: ${err.message}`, 'error');
             }
         }
 
         function setStatus(message, type = 'info') {
-            const statusArea = document.getElementById('status-area');
-            statusArea.style.display = 'block';
-            statusArea.innerHTML = message;
-            statusArea.className = ''; 
-            if (type !== 'info') statusArea.classList.add(type);
+            const area = document.getElementById('status-area');
+            if (!message) { area.style.display = 'none'; return; }
+            area.style.display = 'block';
+            area.innerHTML = message;
+            area.className = type;
         }
 
-        function toggleLoading(actionType, isLoading) {
-            const isDl = actionType === 'download';
-            document.getElementById('btn-dl').disabled = isLoading;
-            document.getElementById('btn-tr').disabled = isLoading;
-            document.getElementById('url').disabled = isLoading;
+        function toggleLoading(isLoading) {
+            const btn = document.getElementById('main-action-btn');
+            const spinner = document.getElementById('main-spinner');
+            const urlInput = document.getElementById('url');
             
-            const spinner = document.getElementById(isDl ? 'spin-dl' : 'spin-tr');
-            const text = document.getElementById(isDl ? 'text-dl' : 'text-tr');
-            
-            if (isLoading) {
-                spinner.style.display = 'inline-block';
-                text.textContent = isDl ? 'Initializing...' : 'Transcribing...';
-            } else {
-                spinner.style.display = 'none';
-                text.textContent = isDl ? 'Download' : 'Transcribe';
-            }
+            btn.disabled = isLoading;
+            urlInput.disabled = isLoading;
+            spinner.style.display = isLoading ? 'inline-block' : 'none';
         }
 
-        async function browseFolder() {
-            try {
-                const response = await fetch(`${API_BASE}/browse-folder`);
-                const data = await response.json();
-                if (response.ok && data.status === 'success') {
-                    document.getElementById('save-path').value = data.path;
-                }
-            } catch (error) {
-                console.error("Browse failed", error);
-            }
-        }
-
-        async function openOutputFolder() {
-            if (!currentDownloadPath) return;
-            try {
-                await fetch(`${API_BASE}/open-location`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ path: currentDownloadPath })
-                });
-            } catch (error) {
-                console.error("Failed to open folder", error);
-            }
-        }
-        
-        function pollProgress(jobId) {
-            document.getElementById('progress-container').style.display = 'block';
-            
-            progressInterval = setInterval(async () => {
-                try {
-                    const res = await fetch(`${API_BASE}/progress/${jobId}`);
-                    const json = await res.json();
-                    
-                    if (!res.ok || json.status === 'error') throw new Error("Progress fetch failed");
-                    
-                    const state = json.data;
-                    document.getElementById('text-dl').textContent = state.status === 'downloading' ? 'Downloading...' : 'Processing...';
-                    
-                    const percentFloat = parseFloat(state.percent.replace('%', ''));
-                    if (!isNaN(percentFloat)) {
-                        document.getElementById('dl-progress').value = percentFloat;
-                        document.getElementById('dl-percent').textContent = state.percent;
-                    }
-                    
-                    document.getElementById('dl-speed').textContent = state.speed || '--';
-                    document.getElementById('dl-eta').textContent = state.eta || '--';
-                    
-                    if (state.status === 'finished') {
-                        clearInterval(progressInterval);
-                        document.getElementById('progress-container').style.display = 'none';
-                        toggleLoading('download', false);
-                        setStatus(`Downloaded '${state.title}' successfully to: <br/><strong>${state.saved_path}</strong>`, 'success');
-                        
-                        if (state.folder_path) {
-                            currentDownloadPath = state.folder_path;
-                            document.getElementById('btn-open-folder').style.display = 'block';
-                        }
-                    } else if (state.status === 'error') {
-                        throw new Error(state.error);
-                    }
-                } catch (err) {
-                    clearInterval(progressInterval);
-                    toggleLoading('download', false);
-                    setStatus(`Error: ${err.message}`, 'error');
-                }
-            }, 1000); // poll every 1 second
+        function executeCurrentMode() {
+            handleAction(currentMode);
         }
 
         async function handleAction(actionType) {
             const urlInput = document.getElementById('url').value.trim();
-            const userId = document.getElementById('user_id').value;
             const savePath = document.getElementById('save-path').value.trim();
-            const formatSelect = document.getElementById('resolution');
-            const formatId = formatSelect && formatSelect.value ? formatSelect.value : 'bestvideo+bestaudio/best';
+            const formatId = document.getElementById('resolution').value;
             
-            const transcriptArea = document.getElementById('transcript-result');
-            const btnOpen = document.getElementById('btn-open-folder');
-            
-            if (!urlInput) {
-                setStatus("Please enter a valid URL.", "error");
-                return;
-            }
+            if (!urlInput) { setStatus("Enter a link first.", "error"); return; }
 
             // Reset UI
-            setStatus(`Starting ${actionType}...`);
-            transcriptArea.style.display = 'none';
-            btnOpen.style.display = 'none';
-            document.getElementById('progress-container').style.display = 'none';
-            toggleLoading(actionType, true);
+            setStatus(null);
+            document.getElementById('transcript-container').style.display = 'none';
+            document.getElementById('btn-open-folder').style.display = 'none';
+            toggleLoading(true);
 
             try {
                 const response = await fetch(`${API_BASE}/${actionType}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: urlInput, user_id: userId, save_path: savePath, format_id: formatId })
+                    body: JSON.stringify({ url: urlInput, save_path: savePath, format_id: formatId })
                 });
 
                 const data = await response.json();
+                if (!response.ok || data.status === 'error') throw new Error(data.message);
 
-                if (!response.ok || data.status === 'error') {
-                    throw new Error(data.message || `An error occurred during ${actionType}`);
-                }
-
-                if (actionType === 'download') {
-                    // Download is now async. Switch to polling progress.
-                    setStatus('Connecting to media servers...', 'info');
-                    pollProgress(data.job_id);
-                } else if (actionType === 'transcribe') {
-                    setStatus('Transcription successful!', 'success');
-                    transcriptArea.style.display = 'block';
-                    transcriptArea.value = data.text;
-                    toggleLoading(actionType, false);
-                }
-
+                pollProgress(data.job_id, actionType);
             } catch (error) {
-                setStatus(`Error: ${error.message}`, 'error');
-                toggleLoading(actionType, false);
+                setStatus(`Request Failed: ${error.message}`, 'error');
+                toggleLoading(false);
+            }
+        }
+
+        function pollProgress(jobId, actionType) {
+            const isDl = actionType === 'download';
+            document.getElementById('progress-container').style.display = 'block';
+            const label = document.getElementById('progress-label');
+            const stats = document.querySelector('.progress-stats');
+            
+            progressInterval = setInterval(async () => {
+                try {
+                    const res = await fetch(`${API_BASE}/progress/${jobId}`);
+                    const json = await res.json();
+                    if (!res.ok) throw new Error("Connection lost.");
+                    
+                    const state = json.data;
+                    
+                    // Specific status labeling
+                    label.textContent = state.status.replace('_', ' ').toUpperCase();
+                    
+                    // Progress Bar
+                    let p = parseFloat((state.percent || "0").replace('%',''));
+                    if (isNaN(p)) p = 0;
+                    document.getElementById('dl-progress').value = p;
+                    document.getElementById('dl-percent').textContent = `${Math.round(p)}%`;
+                    
+                    if (isDl) {
+                        document.getElementById('dl-speed').textContent = state.speed || '--';
+                        document.getElementById('dl-eta').textContent = state.eta || '--';
+                    } else {
+                        document.getElementById('dl-speed').textContent = 'AI Processing';
+                        document.getElementById('dl-eta').textContent = 'Generating Text...';
+                    }
+
+                    if (state.status === 'finished') {
+                        stopPolling();
+                        if (isDl) {
+                            setStatus(`Success! Saved to folder.`, 'success');
+                            currentDownloadPath = state.folder_path;
+                            document.getElementById('btn-open-folder').style.display = 'block';
+                        } else {
+                            setStatus('Transcription Complete!', 'success');
+                            const container = document.getElementById('transcript-container');
+                            const area = document.getElementById('transcript-result');
+                            area.value = state.text;
+                            container.style.display = 'block';
+                            container.scrollIntoView({ behavior: 'smooth' });
+                        }
+                    } else if (state.status === 'error') {
+                        throw new Error(state.error);
+                    }
+                } catch (err) {
+                    stopPolling();
+                    setStatus(`Job Error: ${err.message}`, 'error');
+                }
+            }, 1000);
+        }
+
+        function stopPolling() {
+            clearInterval(progressInterval);
+            progressInterval = null;
+            document.getElementById('progress-container').style.display = 'none';
+            toggleLoading(false);
+        }
+
+        function clearUrl() {
+            const input = document.getElementById('url');
+            input.value = '';
+            handleUrlInput();
+            input.focus();
+        }
+
+        async function browseFolder() {
+            try {
+                const res = await fetch(`${API_BASE}/browse-folder`);
+                const data = await res.json();
+                if (data.status === 'success') document.getElementById('save-path').value = data.path;
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function openOutputFolder() {
+            if (!currentDownloadPath) return;
+            fetch(`${API_BASE}/open-location`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: currentDownloadPath })
+            });
+        }
+
+        async function copyTranscript() {
+            const area = document.getElementById('transcript-result');
+            const btn = document.getElementById('copy-btn');
+            try {
+                await navigator.clipboard.writeText(area.value);
+                const originalText = btn.textContent;
+                btn.textContent = 'Copied!';
+                btn.style.background = 'rgba(16, 185, 129, 0.4)';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '';
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
             }
         }
     </script>
