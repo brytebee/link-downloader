@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Link Downloader & Transcriber</title>
+    <link rel="icon" type="image/png" href="favicon.png">
     <!-- Modern Google Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -188,12 +189,71 @@
             font-weight: 500;
         }
 
-        /* Chapter Options */
-        .chapter-options {
+        /* Chapter Options Accordion */
+        .chapter-accordion {
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .chapter-accordion-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            background: rgba(15, 23, 42, 0.4);
+            cursor: pointer;
+            user-select: none;
+            border: none;
+            width: 100%;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+
+        .chapter-accordion-header:hover {
+            background: rgba(59, 130, 246, 0.06);
+            color: var(--text-main);
+        }
+
+        .chapter-accordion-header.open {
+            color: var(--text-main);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .chapter-chevron {
+            font-style: normal;
+            display: inline-block;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 0.75rem;
+            opacity: 0.6;
+        }
+
+        .chapter-accordion-header.open .chapter-chevron {
+            transform: rotate(180deg);
+            opacity: 1;
+        }
+
+        .chapter-accordion-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                        padding 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 0;
             display: flex;
             flex-direction: column;
-            gap: 0.6rem;
-            margin-bottom: 1.5rem;
+            gap: 0;
+            background: rgba(15, 23, 42, 0.2);
+        }
+
+        .chapter-accordion-body.open {
+            max-height: 200px;
+            padding: 0.6rem;
+            gap: 0.5rem;
         }
 
         .chapter-option {
@@ -203,7 +263,7 @@
             padding: 0.75rem 1rem;
             background: rgba(15, 23, 42, 0.4);
             border: 1px solid var(--border);
-            border-radius: 12px;
+            border-radius: 10px;
             cursor: pointer;
             transition: border-color 0.2s ease, background 0.2s ease;
             user-select: none;
@@ -431,22 +491,27 @@
                 </div>
             </div>
 
-            <label>Chapter Options</label>
-            <div class="chapter-options">
-                <label class="chapter-option" id="lbl-split-chapters" for="split-chapters">
-                    <input type="checkbox" id="split-chapters" onchange="toggleChapterOption('split-chapters')">
-                    <div class="chapter-option-text">
-                        <span class="chapter-option-title">✂️ Split into Files</span>
-                        <span class="chapter-option-desc">Save each chapter as a separate video file (e.g. [01] Intro.mp4)</span>
-                    </div>
-                </label>
-                <label class="chapter-option" id="lbl-embed-chapters" for="embed-chapters">
-                    <input type="checkbox" id="embed-chapters" onchange="toggleChapterOption('embed-chapters')">
-                    <div class="chapter-option-text">
-                        <span class="chapter-option-title">📌 Embed Chapters</span>
-                        <span class="chapter-option-desc">Bake chapter markers into the file — jump points work in VLC &amp; IINA</span>
-                    </div>
-                </label>
+            <div class="chapter-accordion">
+                <button type="button" class="chapter-accordion-header" id="chapter-accordion-btn" onclick="toggleChapterAccordion()" aria-expanded="false" aria-controls="chapter-accordion-body">
+                    <span>Chapter Options</span>
+                    <i class="chapter-chevron">&#9660;</i>
+                </button>
+                <div class="chapter-accordion-body" id="chapter-accordion-body" aria-hidden="true">
+                    <label class="chapter-option" id="lbl-split-chapters" for="split-chapters">
+                        <input type="checkbox" id="split-chapters" onchange="toggleChapterOption('split-chapters')">
+                        <div class="chapter-option-text">
+                            <span class="chapter-option-title">&#9986;&#65039; Split into Files</span>
+                            <span class="chapter-option-desc">Save each chapter as a separate video file (e.g. [01] Intro.mp4)</span>
+                        </div>
+                    </label>
+                    <label class="chapter-option" id="lbl-embed-chapters" for="embed-chapters">
+                        <input type="checkbox" id="embed-chapters" onchange="toggleChapterOption('embed-chapters')">
+                        <div class="chapter-option-text">
+                            <span class="chapter-option-title">&#128204; Embed Chapters</span>
+                            <span class="chapter-option-desc">Bake chapter markers into the file &mdash; jump points work in VLC &amp; IINA</span>
+                        </div>
+                    </label>
+                </div>
             </div>
         </div>
 
@@ -612,6 +677,15 @@
                 document.getElementById('split-chapters').checked = false;
                 document.getElementById('lbl-split-chapters').classList.remove('checked');
             }
+        }
+
+        function toggleChapterAccordion() {
+            const btn = document.getElementById('chapter-accordion-btn');
+            const body = document.getElementById('chapter-accordion-body');
+            const isOpen = body.classList.toggle('open');
+            btn.classList.toggle('open', isOpen);
+            btn.setAttribute('aria-expanded', isOpen);
+            body.setAttribute('aria-hidden', !isOpen);
         }
 
         async function handleAction(actionType) {
