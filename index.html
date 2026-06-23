@@ -188,6 +188,66 @@
             font-weight: 500;
         }
 
+        /* Chapter Options */
+        .chapter-options {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .chapter-option {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: border-color 0.2s ease, background 0.2s ease;
+            user-select: none;
+        }
+
+        .chapter-option:hover {
+            border-color: rgba(59, 130, 246, 0.4);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .chapter-option input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            min-width: 18px;
+            padding: 0;
+            margin: 0;
+            accent-color: var(--primary);
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .chapter-option.checked {
+            border-color: rgba(59, 130, 246, 0.6);
+            background: rgba(59, 130, 246, 0.08);
+        }
+
+        .chapter-option-text {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .chapter-option-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .chapter-option-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
         /* Clear Button */
         .clear-btn {
             position: absolute;
@@ -359,7 +419,7 @@
         <!-- Download Specific Options -->
         <div id="download-group" class="option-group">
             <div class="input-group" id="resolution-group">
-                <label for="resolution">Quality & Size</label>
+                <label for="resolution">Quality &amp; Size</label>
                 <select id="resolution"></select>
             </div>
             
@@ -369,6 +429,24 @@
                     <input type="text" id="save-path" placeholder="Using default folder...">
                     <button type="button" class="btn-browse" onclick="browseFolder()">Browse</button>
                 </div>
+            </div>
+
+            <label>Chapter Options</label>
+            <div class="chapter-options">
+                <label class="chapter-option" id="lbl-split-chapters" for="split-chapters">
+                    <input type="checkbox" id="split-chapters" onchange="toggleChapterOption('split-chapters')">
+                    <div class="chapter-option-text">
+                        <span class="chapter-option-title">✂️ Split into Files</span>
+                        <span class="chapter-option-desc">Save each chapter as a separate video file (e.g. [01] Intro.mp4)</span>
+                    </div>
+                </label>
+                <label class="chapter-option" id="lbl-embed-chapters" for="embed-chapters">
+                    <input type="checkbox" id="embed-chapters" onchange="toggleChapterOption('embed-chapters')">
+                    <div class="chapter-option-text">
+                        <span class="chapter-option-title">📌 Embed Chapters</span>
+                        <span class="chapter-option-desc">Bake chapter markers into the file — jump points work in VLC &amp; IINA</span>
+                    </div>
+                </label>
             </div>
         </div>
 
@@ -522,10 +600,26 @@
             handleAction(currentMode);
         }
 
+        function toggleChapterOption(id) {
+            const cb = document.getElementById(id);
+            const lbl = document.getElementById('lbl-' + id);
+            lbl.classList.toggle('checked', cb.checked);
+            // Split and Embed are mutually exclusive
+            if (id === 'split-chapters' && cb.checked) {
+                document.getElementById('embed-chapters').checked = false;
+                document.getElementById('lbl-embed-chapters').classList.remove('checked');
+            } else if (id === 'embed-chapters' && cb.checked) {
+                document.getElementById('split-chapters').checked = false;
+                document.getElementById('lbl-split-chapters').classList.remove('checked');
+            }
+        }
+
         async function handleAction(actionType) {
             const urlInput = document.getElementById('url').value.trim();
             const savePath = document.getElementById('save-path').value.trim();
             const formatId = document.getElementById('resolution').value;
+            const splitChapters = document.getElementById('split-chapters')?.checked || false;
+            const embedChapters = document.getElementById('embed-chapters')?.checked || false;
             
             if (!urlInput) { setStatus("Enter a link first.", "error"); return; }
 
@@ -539,7 +633,7 @@
                 const response = await fetch(`${API_BASE}/${actionType}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: urlInput, save_path: savePath, format_id: formatId })
+                    body: JSON.stringify({ url: urlInput, save_path: savePath, format_id: formatId, split_chapters: splitChapters, embed_chapters: embedChapters })
                 });
 
                 const data = await response.json();
