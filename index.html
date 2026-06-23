@@ -251,8 +251,8 @@
         }
 
         .chapter-accordion-body.open {
-            max-height: 200px;
-            padding: 0.6rem;
+            max-height: 350px;
+            padding: 0.6rem 0.6rem 1rem 0.6rem;
             gap: 0.5rem;
         }
 
@@ -511,6 +511,13 @@
                             <span class="chapter-option-desc">Bake chapter markers into the file &mdash; jump points work in VLC &amp; IINA</span>
                         </div>
                     </label>
+                    <label class="chapter-option" id="lbl-download-subs" for="download-subs">
+                        <input type="checkbox" id="download-subs" onchange="toggleSubtitleOption('download-subs')">
+                        <div class="chapter-option-text">
+                            <span class="chapter-option-title">&#128221; Download Subtitles</span>
+                            <span class="chapter-option-desc">Download English subtitles (split them too if video is split)</span>
+                        </div>
+                    </label>
                 </div>
             </div>
         </div>
@@ -688,12 +695,19 @@
             body.setAttribute('aria-hidden', !isOpen);
         }
 
+        function toggleSubtitleOption(id) {
+            const cb = document.getElementById(id);
+            const lbl = document.getElementById('lbl-' + id);
+            lbl.classList.toggle('checked', cb.checked);
+        }
+
         async function handleAction(actionType) {
             const urlInput = document.getElementById('url').value.trim();
             const savePath = document.getElementById('save-path').value.trim();
             const formatId = document.getElementById('resolution').value;
             const splitChapters = document.getElementById('split-chapters')?.checked || false;
             const embedChapters = document.getElementById('embed-chapters')?.checked || false;
+            const writeSubs = document.getElementById('download-subs')?.checked || false;
             
             if (!urlInput) { setStatus("Enter a link first.", "error"); return; }
 
@@ -707,7 +721,14 @@
                 const response = await fetch(`${API_BASE}/${actionType}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: urlInput, save_path: savePath, format_id: formatId, split_chapters: splitChapters, embed_chapters: embedChapters })
+                    body: JSON.stringify({
+                        url: urlInput,
+                        save_path: savePath,
+                        format_id: formatId,
+                        split_chapters: splitChapters,
+                        embed_chapters: embedChapters,
+                        write_subs: writeSubs
+                    })
                 });
 
                 const data = await response.json();
