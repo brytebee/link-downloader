@@ -445,11 +445,54 @@
         #status-area.info { background: rgba(59, 130, 246, 0.1); color: #93c5fd; }
         #status-area.success { background: rgba(16, 185, 129, 0.1); color: #6ee7b7; }
         #status-area.error { background: rgba(239, 68, 68, 0.1); color: #fca5a5; }
+
+        .header-top {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .version-badge {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px 10px;
+            border-radius: 9999px;
+            border: 1px solid var(--border);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .update-btn {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            border-radius: 9999px;
+            padding: 2px 8px;
+            font-size: 0.68rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .update-btn:hover {
+            background: rgba(245, 158, 11, 0.35);
+        }
     </style>
 </head>
 <body class="mode-download">
     <div class="container" id="main-container">
-        <h1>Media Extraction</h1>
+        <div class="header-top">
+            <h1 style="margin:0;">Media Extraction</h1>
+            <div id="version-container" class="version-badge">
+                <span id="version-text">yt-dlp</span>
+                <button type="button" id="btn-update-ytdlp" class="update-btn" style="display:none;" onclick="triggerEngineUpgrade()">Update</button>
+            </div>
+        </div>
 
         <div class="mode-switcher">
             <div class="mode-glider"></div>
@@ -845,6 +888,56 @@
                 console.error('Failed to copy text: ', err);
             }
         }
+
+        async function checkEngineVersion() {
+            try {
+                const res = await fetch(`${API_BASE}/version`);
+                if (!res.ok) return;
+                const data = await res.json();
+                if (data.status === 'success') {
+                    const versionText = document.getElementById('version-text');
+                    const updateBtn = document.getElementById('btn-update-ytdlp');
+                    versionText.textContent = `v${data.installed_version}`;
+                    if (data.update_available) {
+                        versionText.textContent = `v${data.installed_version} (v${data.latest_version} available)`;
+                        updateBtn.style.display = 'inline-block';
+                    } else {
+                        updateBtn.style.display = 'none';
+                    }
+                }
+            } catch (err) {
+                console.warn('Could not check yt-dlp version:', err);
+            }
+        }
+
+        async function triggerEngineUpgrade() {
+            const updateBtn = document.getElementById('btn-update-ytdlp');
+            const versionText = document.getElementById('version-text');
+            updateBtn.disabled = true;
+            updateBtn.textContent = 'Updating...';
+            setStatus('Upgrading yt-dlp engine in background...', 'info');
+
+            try {
+                const res = await fetch(`${API_BASE}/upgrade`, { method: 'POST' });
+                const data = await res.json();
+                if (res.ok && data.status === 'success') {
+                    setStatus('yt-dlp updated successfully! Retrying actions will use the latest engine.', 'success');
+                    versionText.textContent = `v${data.new_version}`;
+                    updateBtn.style.display = 'none';
+                } else {
+                    throw new Error(data.message || 'Upgrade failed');
+                }
+            } catch (err) {
+                setStatus(`Engine Upgrade Error: ${err.message}`, 'error');
+                updateBtn.disabled = false;
+                updateBtn.textContent = 'Retry';
+            }
+        }
+
+        // Initialize version check on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            checkEngineVersion();
+        });
     </script>
 </body>
 </html>
